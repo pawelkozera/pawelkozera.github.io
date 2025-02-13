@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Card Alert</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Roboto:wght@400;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="selector-container">
+        <select id="streamer-select" class="custom-select">
+            <option value="">Select Streamer</option>
+        </select>
+        
+        <select id="user-select" class="custom-select" disabled>
+            <option value="">Select User</option>
+        </select>
+    </div>
+
+    <div id="bingo-card" class="hidden">
+        <div class="bingo-header">BINGO CARD</div>
+        <div id="username-display"></div>
+        <table id="card-table"></table>
+    </div>
+    <div id="winner-overlay" class="hidden">
+        <div class="winner-text">🎉 BINGO! 🎉</div>
+        <div class="winner-user" id="winner-name"></div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules (Modular SDK)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app-check.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDfRBR9NGB5f8GT1ndgAvvGbuTmW3lgPyA",
+            authDomain: "bingo-40cba.firebaseapp.com",
+            projectId: "bingo-40cba",
+            storageBucket: "bingo-40cba.firebasestorage.app",
+            messagingSenderId: "439731568255",
+            appId: "1:439731568255:web:d5c3e1eab04e48813bc94a",
+            measurementId: "G-8YG9E7QF2N"
+        };
+
+        // Initialize Firebase app
+        const app = initializeApp(firebaseConfig);
+
+        /*
+        const appCheck = initializeAppCheck(app, {
+            provider: new ReCaptchaEnterpriseProvider(''),
+            isTokenAutoRefreshEnabled: true
+        });
+        */
+        const db = getFirestore(app);
+
+        const bingoCard = document.getElementById("bingo-card");
+        const cardTable = document.getElementById("card-table");
+        const usernameDisplay = document.getElementById("username-display");
+        let currentCardTimeout = null;
+
+        // Listen for any user with showCard: true
+        const channel_name = "p0js";
+        const usersRef = collection(db, "streamer", channel_name, "game_name", "bingo", "players");
+        const bingoGameRef = doc(db, "streamer", channel_name, "game_name", "bingo");
+        let grid_rows = 5;
+        let grid_columns = 5;
+
+        const q = query(usersRef, where("showCard", "==", true));
+
+        const unsubscribeBingo = onSnapshot(bingoGameRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const bingoData = docSnap.data();
+                grid_rows = bingoData.grid_rows || 5;
+                grid_columns = bingoData.grid_columns || 5;
+            }
+        });
+
+        const streamerSelect = document.getElementById('streamer-select');
+        const userSelect = document.getElementById('user-select');
+
+        async function loadStreamers() {
+            const streamersRef = collection(db, "streamer");
+            const streamersSnapshot = await getDocs(streamersRef);
+            
+            streamersSnapshot.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = "p0js";
+                option.textContent = "p0js";
+                streamerSelect.appendChild(option);
+            });
+        }
+
+        streamerSelect.addEventListener('change', async (e) => {
+            const streamerName = e.target.value;
+            userSelect.disabled = !streamerName;
+            userSelect.innerHTML = '<option value="">Select User</option>';
+
+            if (!streamerName) return;
+
+            // Get players for selected streamer's bingo game
+            const playersRef = collection(
+                db, 
+                "streamer", 
+                streamerName,
+                "game_name",
+                "bingo",  // Your specific game name
+                "players"
+            );
+
+            const playersSnapshot = await getDocs(playersRef);
+            playersSnapshot.forEach(playerDoc => {
+                const option = document.createElement('option');
+                option.value = playerDoc.id;
+                option.textContent = playerDoc.id;
+                userSelect.appendChild(option);
+            });
+        });
+
+        userSelect.addEventListener('change', async (e) => {
+            const streamerName = streamerSelect.value;
+            const playerName = e.target.value;
+            
+            if (!streamerName || !playerName) return;
+
+            // Get player document reference
+            const playerRef = doc(
+                db,
+                "streamer",
+                streamerName,
+                "game_name",
+                "bingo",
+                "players",
+                playerName
+            );
+
+            const playerSnap = await getDoc(playerRef);
+            
+            if (playerSnap.exists()) {
+                showBingoCard(playerName, playerSnap.data());
+            }
+        });
+
+        loadStreamers();
+    
+        function showBingoCard(username, userData) {
+            usernameDisplay.textContent = `User: ${username}`;
+            cardTable.innerHTML = "";
+
+            cardTable.setAttribute('data-grid-size', Math.max(grid_rows, grid_columns));
+
+            let index = 0;
+            for (let row = 0; row < grid_rows; row++) {
+                let tr = document.createElement("tr");
+                for (let col = 0; col < grid_columns; col++) {
+                    let td = document.createElement("td");
+                    td.innerHTML = `<strong>${index + 1}</strong> ${userData.card[index]}`;
+                    td.classList.add("bingo-cell");
+                    
+                    if (userData.marked[index]) {
+                        td.classList.add("marked");
+                    }
+
+                    tr.appendChild(td);
+                    index++;
+                }
+                cardTable.appendChild(tr);
+            }
+
+            bingoCard.classList.remove("hidden");
+        }
+
+        function hideBingoCard() {
+            bingoCard.classList.add("hidden");
+            cardTable.innerHTML = "";
+            usernameDisplay.textContent = "";
+            console.log("Bingo card hidden");
+        }
+
+        function showWinner(username) {
+            const winnerOverlay = document.getElementById('winner-overlay');
+            const winnerName = document.getElementById('winner-name');
+            
+            winnerName.textContent = `${username}`;
+            winnerOverlay.classList.remove('hidden');
+        }
+
+        function hideWinner() {
+            document.getElementById('winner-overlay').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
