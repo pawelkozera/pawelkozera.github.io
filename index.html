@@ -30,25 +30,24 @@
         <div class="winner-user" id="winner-name"></div>
     </div>
 
-    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6 hidden">
         <h1 class="text-3xl font-bold mb-6 text-gray-800">Leaderboard</h1>
-        
         <div class="overflow-x-auto">
-            <table class="table w-full">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Score</th>
-                        <th>Badges</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboardList">
-                    <!-- Leaderboard items will be inserted here -->
-                </tbody>
-            </table>
+          <table class="table w-full">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Badges</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardList">
+              <!-- Leaderboard items will be inserted here -->
+            </tbody>
+          </table>
         </div>
-    </div>
+      </div>
 
     <script type="module">
         // Import Firebase modules (Modular SDK)
@@ -80,6 +79,7 @@
         const bingoCard = document.getElementById("bingo-card");
         const cardTable = document.getElementById("card-table");
         const usernameDisplay = document.getElementById("username-display");
+        const leaderboardContainer = document.querySelector('.max-w-4xl');
         let currentCardTimeout = null;
 
         // Listen for any user with showCard: true
@@ -89,65 +89,7 @@
         let grid_rows = 5;
         let grid_columns = 5;
 
-        const streamerName = "p0js";
-
-        const leaderboardRef = collection(
-            db, 
-            "streamer", 
-            streamerName, 
-            "game_name", 
-            "bingo", 
-            "leaderboard"
-        );
-
-        // Query top 10 players
-        const qLeader = query(
-            leaderboardRef,
-            orderBy("score", "desc"),
-            limit(10)
-        );
-
-        // Real-time leaderboard listener
-        onSnapshot(qLeader, (snapshot) => {
-            const leaderboardList = document.getElementById('leaderboardList');
-            leaderboardList.innerHTML = '';
-            
-            let rank = 1;
-            snapshot.forEach((doc) => {
-                const player = doc.data();
-                const row = document.createElement('tr');
-                
-                // Add ranking color
-                let rankColor = '';
-                if(rank === 1) rankColor = 'bg-yellow-100';
-                else if(rank === 2) rankColor = 'bg-gray-200';
-                else if(rank === 3) rankColor = 'bg-orange-100';
-
-                row.innerHTML = `
-                    <td class="${rankColor} font-bold">#${rank}</td>
-                    <td>${doc.id}</td>
-                    <td class="font-mono">${player.score.toLocaleString()}</td>
-                    <td>
-                        ${rank === 1 ? '🏆' : ''}
-                        ${player.score >= 1000 ? '⭐' : ''}
-                    </td>
-                `;
-                
-                leaderboardList.appendChild(row);
-                rank++;
-            });
-
-            // Handle empty state
-            if (snapshot.empty) {
-                leaderboardList.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center py-8 text-gray-500">
-                            No players on the leaderboard yet
-                        </td>
-                    </tr>
-                `;
-            }
-        });
+        let unsubscribeLeaderboard = null;
 
         const q = query(usersRef, where("showCard", "==", true));
 
@@ -176,12 +118,85 @@
 
         streamerSelect.addEventListener('change', async (e) => {
             const streamerName = e.target.value;
-            userSelect.disabled = !streamerName;
+            
+            // If no streamer is selected, disable user selection and hide related UI
+            if (!streamerName) {
+                userSelect.disabled = true;
+                userSelect.innerHTML = '<option value="">Select User</option>';
+                leaderboardContainer.classList.add('hidden');
+                hideBingoCard();
+                // Unsubscribe from any previous leaderboard listener
+                if (unsubscribeLeaderboard) {
+                unsubscribeLeaderboard();
+                unsubscribeLeaderboard = null;
+                }
+                return;
+            }
+
+            // A streamer is selected – enable user dropdown and show leaderboard container
+            userSelect.disabled = false;
             userSelect.innerHTML = '<option value="">Select User</option>';
+            leaderboardContainer.classList.remove('hidden');
 
-            if (!streamerName) return;
+            // Set up the leaderboard listener for the selected streamer
+            if (unsubscribeLeaderboard) {
+                unsubscribeLeaderboard();
+            }
+            const leaderboardRef = collection(
+                db, 
+                "streamer", 
+                streamerName, 
+                "game_name", 
+                "bingo", 
+                "leaderboard"
+            );
+            const qLeader = query(
+                leaderboardRef,
+                orderBy("score", "desc"),
+                limit(10)
+            );
+            unsubscribeLeaderboard = onSnapshot(qLeader, (snapshot) => {
+                const leaderboardList = document.getElementById('leaderboardList');
+                leaderboardList.innerHTML = '';
+                
+                let rank = 1;
+                snapshot.forEach((doc) => {
+                const player = doc.data();
+                const row = document.createElement('tr');
+                
+                // Add ranking color
+                let rankColor = '';
+                if(rank === 1) rankColor = 'bg-yellow-100';
+                else if(rank === 2) rankColor = 'bg-gray-200';
+                else if(rank === 3) rankColor = 'bg-orange-100';
 
-            // Get players for selected streamer's bingo game
+                row.innerHTML = `
+                    <td class="${rankColor} font-bold">#${rank}</td>
+                    <td>${doc.id}</td>
+                    <td class="font-mono">${player.score.toLocaleString()}</td>
+                    <td>
+                    ${rank === 1 ? '🏆' : ''}
+                    ${player.score >= 1000 ? '⭐' : ''}
+                    </td>
+                `;
+                
+                leaderboardList.appendChild(row);
+                rank++;
+                });
+
+                // Handle empty state
+                if (snapshot.empty) {
+                leaderboardList.innerHTML = `
+                    <tr>
+                    <td colspan="4" class="text-center py-8 text-gray-500">
+                        No players on the leaderboard yet
+                    </td>
+                    </tr>
+                `;
+                }
+            });
+
+            // Get players for the selected streamer's bingo game
             const playersRef = collection(
                 db, 
                 "streamer", 

@@ -3,41 +3,58 @@ body {
     background: transparent !important;
     font-family: 'Roboto', sans-serif;
     padding-top: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.hidden {
-    opacity: 0;
-    visibility: hidden;
-    transform: translate(-50%, -50%) scale(0.9);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Container for top selectors */
+.selector-container {
+    margin: 20px auto;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    gap: 10px;
+    backdrop-filter: blur(5px);
 }
 
+.custom-select {
+    padding: 8px 15px;
+    margin: 5px;
+    border: 2px solid #FF4655;
+    border-radius: 5px;
+    background: #1A1A1A;
+    color: white;
+    font-family: 'Bangers', cursive;
+    font-size: 16px;
+}
+
+/* Center the bingo card in normal document flow */
 #bingo-card {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1001;
     background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
     color: #fff;
     padding: 20px;
     border-radius: 20px;
-    width: 800px;  /* Fixed width */
-    height: 600px; /* Fixed height */
-    box-sizing: border-box; /* Include padding in dimensions */
-    overflow: hidden; /* Prevent content overflow */
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
+    box-sizing: border-box;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     border: 3px solid #ffd700;
+    animation: cardGlow 2s ease-in-out infinite;
 }
 
-.max-w-4xl { /* Leaderboard container */
-    position: fixed;
-    top: 20px;
-    left: 75%;
-    z-index: 1000;
+/* Leaderboard container becomes part of the normal flow */
+.max-w-4xl {
+    width: 90%;
+    max-width: 800px;
+    margin: 20px auto;
 }
 
+/* Rest of your styles remain mostly the same */
 .bingo-header {
     font-family: 'Bangers', cursive;
     font-size: 2.5rem;
@@ -52,7 +69,7 @@ body {
 
 #card-table {
     width: 100%;
-    height: calc(100% - 80px); /* Account for header and username */
+    height: calc(100% - 80px);
     border-collapse: separate;
     border-spacing: 8px;
     table-layout: fixed;
@@ -68,12 +85,12 @@ body {
     vertical-align: middle;
     word-break: break-word;
     overflow: hidden;
-    font-size: 0.9em; /* Dynamic font size */
+    font-size: 0.9em;
     line-height: 1.2;
 }
 
 #card-table[data-grid-size="5"] td {
-    height: calc((400px - 150px) / 5 - 8px); /* Account for spacing */
+    height: calc((400px - 150px) / 5 - 8px);
     font-size: 0.8em;
 }
 
@@ -132,28 +149,19 @@ body {
     margin-right: 8px;
 }
 
-/* Glow animation for bingo card */
 @keyframes cardGlow {
     0% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
     50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); }
     100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
 }
 
-#bingo-card {
-    animation: cardGlow 2s ease-in-out infinite;
-}
-
-/* Add winner overlay styles */
 #winner-overlay {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    /* Instead of fixed, you can center it with margins or a flex container */
     background: rgba(0, 0, 0, 0.9);
     padding: 2rem;
     border-radius: 15px;
     text-align: center;
-    z-index: 1000;
+    margin: 20px auto;
     border: 3px solid #ffd700;
 }
 
@@ -168,35 +176,4 @@ body {
     font-size: 2rem;
     color: #32cd32;
     margin-top: 1rem;
-}
-
-@keyframes bingoWinGlow {
-    0% { box-shadow: 0 0 20px rgba(50, 205, 50, 0.3); }
-    50% { box-shadow: 0 0 30px rgba(50, 205, 50, 0.6); }
-    100% { box-shadow: 0 0 20px rgba(50, 205, 50, 0.3); }
-}
-
-.selector-container {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    background: rgba(0,0,0,0.7);
-    padding: 15px;
-    border-radius: 10px;
-    display: flex;
-    gap: 10px;
-    backdrop-filter: blur(5px);
-}
-
-.custom-select {
-    padding: 8px 15px;
-    margin: 5px;
-    border: 2px solid #FF4655;
-    border-radius: 5px;
-    background: #1A1A1A;
-    color: white;
-    font-family: 'Bangers', cursive;
-    font-size: 16px;
 }
