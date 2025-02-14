@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bingo Card Alert</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Roboto:wght@400;700&display=swap">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.2/dist/full.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,10 +30,30 @@
         <div class="winner-user" id="winner-name"></div>
     </div>
 
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Leaderboard</h1>
+        
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Score</th>
+                        <th>Badges</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardList">
+                    <!-- Leaderboard items will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script type="module">
         // Import Firebase modules (Modular SDK)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getFirestore, collection, orderBy, limit, query, where, onSnapshot, doc, updateDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app-check.js";
 
         const firebaseConfig = {
@@ -66,6 +88,66 @@
         const bingoGameRef = doc(db, "streamer", channel_name, "game_name", "bingo");
         let grid_rows = 5;
         let grid_columns = 5;
+
+        const streamerName = "p0js";
+
+        const leaderboardRef = collection(
+            db, 
+            "streamer", 
+            streamerName, 
+            "game_name", 
+            "bingo", 
+            "leaderboard"
+        );
+
+        // Query top 10 players
+        const qLeader = query(
+            leaderboardRef,
+            orderBy("score", "desc"),
+            limit(10)
+        );
+
+        // Real-time leaderboard listener
+        onSnapshot(qLeader, (snapshot) => {
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = '';
+            
+            let rank = 1;
+            snapshot.forEach((doc) => {
+                const player = doc.data();
+                const row = document.createElement('tr');
+                
+                // Add ranking color
+                let rankColor = '';
+                if(rank === 1) rankColor = 'bg-yellow-100';
+                else if(rank === 2) rankColor = 'bg-gray-200';
+                else if(rank === 3) rankColor = 'bg-orange-100';
+
+                row.innerHTML = `
+                    <td class="${rankColor} font-bold">#${rank}</td>
+                    <td>${doc.id}</td>
+                    <td class="font-mono">${player.score.toLocaleString()}</td>
+                    <td>
+                        ${rank === 1 ? '🏆' : ''}
+                        ${player.score >= 1000 ? '⭐' : ''}
+                    </td>
+                `;
+                
+                leaderboardList.appendChild(row);
+                rank++;
+            });
+
+            // Handle empty state
+            if (snapshot.empty) {
+                leaderboardList.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-500">
+                            No players on the leaderboard yet
+                        </td>
+                    </tr>
+                `;
+            }
+        });
 
         const q = query(usersRef, where("showCard", "==", true));
 
