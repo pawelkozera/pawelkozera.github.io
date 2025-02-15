@@ -83,7 +83,7 @@
         let currentCardTimeout = null;
 
         // Listen for any user with showCard: true
-        const channel_name = "p0js";
+        const channel_name = "je1lybeann";
         const usersRef = collection(db, "streamer", channel_name, "game_name", "bingo", "players");
         const bingoGameRef = doc(db, "streamer", channel_name, "game_name", "bingo");
         let grid_rows = 5;
@@ -110,8 +110,8 @@
             
             streamersSnapshot.forEach(doc => {
                 const option = document.createElement('option');
-                option.value = "p0js";
-                option.textContent = "p0js";
+                option.value = doc.id;
+                option.textContent = doc.id;
                 streamerSelect.appendChild(option);
             });
         }
