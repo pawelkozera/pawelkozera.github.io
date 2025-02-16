@@ -21,13 +21,13 @@
     </div>
 
     <div id="bingo-card" class="hidden">
+        <div id="winner-overlay" class="hidden">
+            <div class="winner-text">🎉 BINGO! 🎉</div>
+            <div class="winner-user" id="winner-name"></div>
+        </div>
         <div class="bingo-header">BINGO CARD</div>
         <div id="username-display"></div>
         <table id="card-table"></table>
-    </div>
-    <div id="winner-overlay" class="hidden">
-        <div class="winner-text">🎉 BINGO! 🎉</div>
-        <div class="winner-user" id="winner-name"></div>
     </div>
 
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6 hidden">
@@ -118,6 +118,7 @@
 
         streamerSelect.addEventListener('change', async (e) => {
             const streamerName = e.target.value;
+            const playerName = e.target.value;
             
             // If no streamer is selected, disable user selection and hide related UI
             if (!streamerName) {
@@ -125,12 +126,18 @@
                 userSelect.innerHTML = '<option value="">Select User</option>';
                 leaderboardContainer.classList.add('hidden');
                 hideBingoCard();
+                hideWinner();
                 // Unsubscribe from any previous leaderboard listener
                 if (unsubscribeLeaderboard) {
-                unsubscribeLeaderboard();
-                unsubscribeLeaderboard = null;
+                    unsubscribeLeaderboard();
+                    unsubscribeLeaderboard = null;
                 }
                 return;
+            }
+
+            if (playerName) {
+                hideBingoCard();
+                hideWinner();
             }
 
             // A streamer is selected – enable user dropdown and show leaderboard container
@@ -219,7 +226,12 @@
             const streamerName = streamerSelect.value;
             const playerName = e.target.value;
             
-            if (!streamerName || !playerName) return;
+            if (!playerName) {
+                hideBingoCard();
+                hideWinner();
+                
+                return;
+            }
 
             // Get player document reference
             const playerRef = doc(
@@ -235,7 +247,11 @@
             const playerSnap = await getDoc(playerRef);
             
             if (playerSnap.exists()) {
-                showBingoCard(playerName, playerSnap.data());
+                const userData = playerSnap.data();
+                showBingoCard(playerName, userData);
+                if (userData.isBingo) {
+                    showWinner(playerName);
+                }
             }
         });
 
@@ -272,7 +288,6 @@
             bingoCard.classList.add("hidden");
             cardTable.innerHTML = "";
             usernameDisplay.textContent = "";
-            console.log("Bingo card hidden");
         }
 
         function showWinner(username) {

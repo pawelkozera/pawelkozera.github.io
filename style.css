@@ -32,6 +32,7 @@ body {
 
 /* Center the bingo card in normal document flow */
 #bingo-card {
+    position: relative;
     background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
     color: #fff;
     padding: 20px;
@@ -156,12 +157,15 @@ body {
 }
 
 #winner-overlay {
-    /* Instead of fixed, you can center it with margins or a flex container */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     background: rgba(0, 0, 0, 0.9);
     padding: 2rem;
     border-radius: 15px;
     text-align: center;
-    margin: 20px auto;
+    z-index: 1000;
     border: 3px solid #ffd700;
 }
 
